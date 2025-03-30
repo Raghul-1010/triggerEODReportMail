@@ -1,0 +1,123 @@
+package org.example;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import java.time.Duration;
+import com.jacob.com.Dispatch;
+import com.jacob.activeX.ActiveXComponent;
+
+public class EODReport {
+    static WebDriver driver;
+    static String passedCount, blockedCount, retestCount, failedCount, skippedCount, firstNumber; //first number is untested count
+    static String nameOfReceiver = "Raghul"; //Add the name of the receiver
+    static String[] recipientName = {"raghnit@amazon.com"}; // Add RecipientMail ID
+    static String[] ccName = {"raghnit@amazon.com"}; // Add RecipientName // Can be multiple
+    static String ETA = "23/04/2025"; // Enter the ETA here (DD/MM/YYYY)
+    static String runlink = " ";//Add the current run link here
+    static String runLinkFormat = "<a href=\"" + runlink + "\"> //Name of the RUN here  </a>";
+    static String intakeSim = " "; // Intake SIM (SIM LINK)
+    static String intakeSimformat = "<a href=\"" + intakeSim + "\"> //Name the Intake SIM </a>";
+    static String component1 = " "; //Search Page | Device/Browser:
+    static String component2 = " "; //Detail Page | Device/Browser:
+    static String environmentTested = " "; // SB-SCAI – Gamma | SB-MAX – Gamma with endpoints
+    static String callOuts = "Complete the steps at AMConsole after vetting, Now go to logistics/Account-Management page and verify the page is displaying that the DSP is ready for Onboarding screen.On Onboarding screen complete the basic information.Now verify the company attribute review module is awiting for current progress.company attribute review - Contract type will be defined by the DEV team, support needed.\n"; //type your callouts with full stop ".", so it trim with respect to it.
+    static String issuesOfthisRelease = "";// Failures/Passed with issue/Blocked for this release: Sim_Filter
+    static String issuesOfthisReleaseformat = "<a href=\"" + issuesOfthisRelease + "\">SIM Filter</a>";
+    static String untriagedIssues = ""; // SB - SCAI Untriaged & SB – MAX Untriaged defects: SIM filter
+    static String untriagedIssuesformat = "<a href=\"" + untriagedIssues + "\">SIM Filter</a>";
+    static String otherOpenDefects = ""; // Other open defects: Search_SIM & PHD_SIM
+    static String otherOpenDefectsformat = "<a href=\"" + otherOpenDefects + "\">Search_SIM & PHD_SIM</a>";
+
+    public static void mailBody() throws InterruptedException {
+        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(30));
+        System.out.println("Hi" + nameOfReceiver + ",");
+        System.out.println("Please find below the status of" + "            " + "Preflight testing.");//Edit this line - What testing it is "Link".
+        Thread.sleep(5000);
+        String untestCount = driver.findElement(By.xpath("//div[@class='chart-pie-percent-note text-secondary']")).getText();
+        String[] completedOrNot = untestCount.split("/");
+        if (completedOrNot.length > 1) {
+            String firstNumberStr = completedOrNot[0].trim();
+            int firstNumber = Integer.parseInt(firstNumberStr);
+            if (firstNumber == 0) {
+                System.out.println("Status : completed");
+            } else {
+                System.out.println(firstNumber + " cases remain untested, review and add the status manually");
+            }
+        }
+        String[] sentences = callOuts.split("\\. ");
+        System.out.println(ETA);
+        System.out.println(intakeSim);
+        System.out.println(component1);
+        System.out.println(component2);
+        System.out.println(environmentTested);
+        System.out.println("Callouts:");
+        for (String sentence : sentences) {
+            if (!sentence.trim().isEmpty()) {
+                System.out.println("• " + sentence.trim() + ".");
+            }
+        }
+        System.out.println(issuesOfthisRelease);
+        System.out.println(untriagedIssues);
+        System.out.println(otherOpenDefects);
+    }
+
+    public static void sendMail() {
+        try {
+            System.setProperty("java.library.path", "C:\\Users\\raghnit\\IdeaProjects\\VFIAnalyser\\jacob-1.21-x64.dll");
+            ActiveXComponent outlook = new ActiveXComponent("Outlook.Application");
+            Dispatch mail = Dispatch.call(outlook, "CreateItem", 0).toDispatch();
+
+            // Convert arrays to comma-separated strings
+            String recipients = String.join(";", recipientName); // Joining TO recipients
+            String ccRecipients = String.join(";", ccName); // Joining CC recipients
+
+            Dispatch.put(mail, "To", recipients);
+            Dispatch.put(mail, "Cc", ccRecipients);
+            Dispatch.put(mail, "Subject", "EOD Report");//Change the subject in the val
+            String body = "<html><body>Hi " + nameOfReceiver + ",<br><br>"
+                    + "Please find below the status of Preflight testing.<br><br>"
+                    + "ETA: " + ETA + "<br>"
+                    + "Run Link: <a href='" + runlink + "'>Click here</a><br>"
+                    + "Intake Sim: <a href='" + intakeSim + "'>Click here</a><br>"
+                    + "Components: " + component1 + ", " + component2 + "<br>"
+                    + "Environment: " + environmentTested + "<br>"
+                    + "Issues: <a href='" + issuesOfthisRelease + "'>Click here</a><br>"
+                    + "Untriaged: <a href='" + untriagedIssues + "'>Click here</a><br>"
+                    + "Other Defects: <a href='" + otherOpenDefects + "'>Click here</a><br>"
+                    + "</body></html>";
+            Dispatch.put(mail, "HTMLBody", body);
+            Dispatch.call(mail, "Send");
+
+            System.out.println("Email sent successfully via Outlook!");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        EODReport Obj1 = new EODReport();
+        Obj1.launchAndLogin();
+        Obj1.mailBody();
+        sendMail();
+
+    }
+
+    public void launchAndLogin() throws InterruptedException {
+        driver = new ChromeDriver();
+        driver.manage().window().maximize();
+        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(30));
+        driver.get("https://amzlqa-testrail.last-mile.amazon.dev/index.php?/runs/view/153941&group_by=cases:section_id&group_order=asc&group_id=3561999");
+        driver.findElement(By.className("single-sign-on")).click();
+        driver.findElement(By.id("user_name")).sendKeys("raghnit");
+        Thread.sleep(5000);
+        driver.findElement(By.id("verify_btn")).click();
+        Thread.sleep(5000);
+        driver.get("https://amzlqa-testrail.last-mile.amazon.dev/index.php?/runs/view/153941&group_by=cases:section_id&group_order=asc&group_id=3561999");
+        Thread.sleep(5000);
+        driver.findElement(By.xpath("//div[@id='statusChart']/following::span[1]")).getText();
+        driver.findElement(By.xpath("//div[@id='statusChart']/following::span[3]")).getText();
+        driver.findElement(By.xpath("//div[@id='statusChart']/following::span[5]")).getText();
+        driver.findElement(By.xpath("//div[@id='statusChart']/following::span[7]")).getText();
+        driver.findElement(By.xpath("//div[@id='statusChart']/following::span[17]")).getText();
+    }
+}
