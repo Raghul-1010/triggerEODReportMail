@@ -1,0 +1,212 @@
+package org.example;
+import org.openqa.selenium.*;
+import org.openqa.selenium.chrome.ChromeDriver;
+import java.time.Duration;
+import com.jacob.com.Dispatch;
+import com.jacob.activeX.ActiveXComponent;
+
+
+public class EODReport {
+    static WebDriver driver;
+    static String passedCount, blockedCount, retestCount, failedCount, skippedCount, firstNumber; //first number is untested count
+    static String nameOfReceiver = "Raghul"; //Add the name of the receiver
+    static String[] recipientName = {"raghnit@amazon.com"}; // Add RecipientMail ID
+    static String[] ccName = {"raghnit@amazon.com"}; // Add RecipientName // Can be multiple
+    static String ETA = "23/04/2025"; // Enter the ETA here (DD/MM/YYYY)
+    static String currentDate = "03/27/2025"; // Enter the current date (MM/DD/YYYY)
+    static String runlink = "https://amzlqa-testrail.last-mile.amazon.dev/index.php?/runs/view/153941&group_by=cases:section_id&group_order=asc&group_id=3561999";//Add the current run link here
+    static String runLinkFormat = "<a href=\"" + runlink + "\"> Feb2025ManualRun </a>";
+    static String intakeSim = "https://issues.amazon.com/issues/QSACES-1225"; // Intake SIM (SIM LINK)
+    static String intakeSimformat = "<a href=\"" + intakeSim + "\"> ACESSim </a>";
+    static String component1 = "Mac Safari / Android Mobile - Chrome / Android tablet mShop & Firefox "; //Search Page | Device/Browser:
+    static String component2 = "Windows Chrome / iOS Mobile - Firefox / Android tablet mShop & Firefox"; //Detail Page | Device/Browser:
+    static String environmentTested = "Gamma"; // SB-SCAI – Gamma | SB-MAX – Gamma with endpoints
+    static String callOuts = "Complete the steps at AMConsole after vetting, Now go to logistics/Account-Management page and verify the page is displaying that the DSP is ready for Onboarding screen.On Onboarding screen complete the basic information.Now verify the company attribute review module is awiting for current progress.company attribute review - Contract type will be defined by the DEV team, support needed.\n"; //type your callouts with full stop ".", so it trim with respect to it.
+    static String issuesOfthisRelease = "https://sim.amazon.com/issues/search?q=id%3A(SBX-Search-6958+OR+SBX-Search-6895+OR+SBX-Search-6893+OR+SBX-Search-2903+OR+CrX-Classic-177+OR+CrX-Classic-170+OR+SBX-Search-5038+OR+SBX-Search-6885+OR+SBX-Search-5954+OR+P70115033)&sort=lastUpdatedConversationDate+desc&selectedDocument=3251c432-f445-4b4a-a6d4-ca0baf7d99ba";// Failures/Passed with issue/Blocked for this release: Sim_Filter
+    static String issuesOfthisReleaseformat = "<a href=\"" + issuesOfthisRelease + "\">SIM Filter</a>";
+    static String untriagedIssues = "https://issues.amazon.com/issues/search?q=label%3A(15218f2c-4be9-4b2b-bb4b-683cf7f3841b+OR+2119ba96-a634-4c6d-bf3c-a03623988cb4+OR+2119ba96-a634-4c6d-bf3c-a03623988cb4+OR+26f09a3d-f62d-42ac-a01a-cac095e3d026)+status%3A(Open)&sort=lastUpdatedConversationDate+desc&selectedDocument=7c0f3091-cd6e-40f6-af0d-6c79a3c8e5ec"; // SB - SCAI Untriaged & SB – MAX Untriaged defects: SIM filter
+    static String untriagedIssuesformat = "<a href=\"" + untriagedIssues + "\">SIM Filter</a>";
+    static String otherOpenDefects = "https://issues.amazon.com/issues/search?q=status%3A(Open)+tags%3A(SBA_Bug)&sort=lastUpdatedDate+desc&selectedDocument=0190ca1c-0603-481d-9640-3270b14f4c94"; // Other open defects: Search_SIM & PHD_SIM
+    static String otherOpenDefectsformat = "<a href=\"" + otherOpenDefects + "\">Search_SIM & PHD_SIM</a>";
+    static String status = "";
+
+    /*public static void mailBody() throws InterruptedException {
+        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(30));
+        System.out.println("Hi" + nameOfReceiver + ",");
+        System.out.println("Please find below the status of" + "            " + "Preflight testing.");//Edit this line - What testing it is "Link".
+        Thread.sleep(5000);
+        String untestCount = driver.findElement(By.xpath("//div[@class='chart-pie-percent-note text-secondary']")).getText();
+        String[] completedOrNot = untestCount.split("/");
+        if (completedOrNot.length > 1) {
+            String firstNumberStr = completedOrNot[0].trim();
+            int firstNumber = Integer.parseInt(firstNumberStr);
+            if (firstNumber == 0) {
+                status = "completed";
+            } else {
+                status = firstNumber + " cases remain untested";
+            }
+        }
+        System.out.println(ETA);
+        System.out.println(intakeSim);
+        System.out.println(component1);
+        System.out.println(component2);
+        System.out.println(environmentTested);
+        System.out.println(issuesOfthisRelease);
+        System.out.println(untriagedIssues);
+        System.out.println(otherOpenDefects);
+    }*/
+
+    public static String formatCallOuts() {
+        String[] sentences = callOuts.split("\\.\\s*"); // Splitting at "." with optional spaces
+        StringBuilder formattedCallOuts = new StringBuilder();
+
+        for (String sentence : sentences) {
+            if (!sentence.trim().isEmpty()) {
+                formattedCallOuts.append("• ").append(sentence.trim()).append(".<br>");
+            }
+        }
+
+        return formattedCallOuts.toString();
+    }
+
+    public static void sendMail() {
+        try {
+            System.setProperty("java.library.path", "C:\\Users\\raghnit\\IdeaProjects\\VFIAnalyser\\jacob-1.21-x64.dll");
+            ActiveXComponent outlook = new ActiveXComponent("Outlook.Application");
+            Dispatch mail = Dispatch.call(outlook, "CreateItem", 0).toDispatch();
+
+            // Convert arrays to comma-separated strings
+            String recipients = String.join(";", recipientName); // Joining TO recipients
+            String ccRecipients = String.join(";", ccName); // Joining CC recipients
+            Dispatch.put(mail, "To", recipients);
+            Dispatch.put(mail, "Cc", ccRecipients);
+            Dispatch.put(mail, "Subject", "EOD Report"); // Email Subject
+
+            // Constructing the email body
+            String body = "<html><body>Hi " + nameOfReceiver + ",<br><br>"
+                    + "Please find below the status of " + runLinkFormat + " Preflight testing.<br><br>"
+                    + "<b><u>Status:</u></b> " + status + "<br><br>"  // Two-line spacing
+                    + "<b><u>ETA:</u></b> " + ETA + "<br><br>"  // Two-line spacing
+                    + "<b><u>Task Sim:</u></b> <u><a href='" + intakeSim + "'>QSACES-1225</a></u><br><br>"
+                    + "<b><u>Search Page | Device/Browser:</u></b> " + component1 + "<br><br>"
+                    + "<b><u>Detail Page | Device/Browser:</u></b> " + component2 + "<br><br>"
+                    + "<b><u>Environment:</u></b> " + environmentTested + "<br><br>"
+                    + "<b><u>Callouts:</u></b><br>" + EODReport.formatCallOuts() + "<br><br>"
+                    + "<b><u>Issue raised today:</u></b><br><br>";
+
+            // **First Table (With an Empty Row)**
+            body += "<table border='1' style='border-collapse:collapse; width: 100%; text-align: center;'>"
+                    + "<tr style='background-color:#f2f2f2; font-weight:bold;'>"
+                    + "<th>S.No</th><th>SIM ID</th><th>SIM Title</th><th>Priority</th><th>Pipeline</th>"
+                    + "</tr>"
+                    + "<tr>" // Empty row
+                    + "<td></td><td></td><td></td><td></td><td></td>"
+                    + "</tr>"
+                    + "</table><br><br>";
+
+            body += "<b><u>Existing Issues:</u></b><br><br>";
+
+            // **Second Table (With an Empty Row)**
+            body += "<table border='1' style='border-collapse:collapse; width: 100%; text-align: center;'>"
+                    + "<tr style='background-color:#f2f2f2; font-weight:bold;'>"
+                    + "<th>S.No</th><th>SIM ID</th><th>SIM Title</th><th>Priority</th><th>Pipeline</th>"
+                    + "</tr>"
+                    + "<tr>" // Empty row
+                    + "<td></td><td></td><td></td><td></td><td></td>"
+                    + "</tr>"
+                    + "</table><br><br>";
+
+
+            body += "<b><u>Failures/Passed with issue/Blocked for this release:</u></b> <u><a href='" + issuesOfthisRelease + "'>Sim_Filter</a></u><br><br>"
+                    + "<b><u>SB - SCAI Untriaged & SB – MAX Untriaged defects:</u></b> <u><a href='" + untriagedIssues + "'>Sim_Filter</a></u><br><br>"
+                    + "<b><u>Other open defects:</u></b> <u><a href='" + otherOpenDefects + "'>Search_SIM & PHD_SIM</a></u><br><br>"
+                    + "</body></html>";
+
+            body += "<b><u>Overall Status:</u></b><br><br>";
+
+            // **Set HTML Body and Save to Draft**
+            Dispatch.put(mail, "HTMLBody", body);
+            Dispatch.call(mail, "Save");
+
+            System.out.println("Email saved as a draft successfully!");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+   /* public static void accessSIMFolder() throws InterruptedException
+    {
+        driver = new ChromeDriver();
+        driver.manage().window().maximize();
+        driver.get("https://issues.amazon.com/issues/search?q=containingFolder%3A(17430f44-d313-4d06-a09b-3282d7aac034)&sort=lastUpdatedDate+desc&selectedDocument=bbefe5bf-e7ad-4910-86a9-f3f814cd4fa7");
+        driver.findElement(By.id("user_name_field")).sendKeys("raghnit");
+        driver.findElement(By.id("user_name_btn")).click();
+        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(30));
+        driver.findElement(By.xpath("//a[@class='select2-choice']")).click();
+        driver.findElement(By.xpath("//input[@class='select2-input select2-focused']")).sendKeys("Create date");
+        driver.findElement(By.xpath("//div[@class='select2-result-label']")).click();
+        driver.findElement(By.xpath("(//input[@class='input-small datepicker'])[1]")).sendKeys("03/27/2025");//Current Data
+        Actions action = new Actions(driver);
+        action.sendKeys(Keys.ESCAPE).perform();
+        driver.findElement(By.xpath("//div[@class='search-filter filter-content']")).click();
+        driver.findElement(By.xpath("//button[@class='btn btn-small btn-primary search-filter-add']")).click();
+        driver.findElement(By.xpath("(//button[@id='initiate-search'])")).click();
+        //gdeghn
+        // WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        List<WebElement> elements = driver.findElements(By.cssSelector("b.queue-item-title"));
+        List<String> keywords = Arrays.asList("[MCM 06]");
+        for (WebElement element : elements) {
+            String title = element.getAttribute("title"); // Get the title attribute
+            if (title == null || title.isEmpty()) {
+                title = element.getText(); // Fallback to inner text
+            }
+            System.out.println("Fetched Data: " + title);
+            for (String keyword : keywords) {
+                if (title.contains(keyword)) {
+                    System.out.println("Fetched Data: " + title);
+                    break;
+                }
+            }
+        }
+    }*/
+
+   /* public static void midwayHandler() throws InterruptedException
+    {
+        driver = new ChromeDriver();
+        driver.manage().window().maximize();
+        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(30));
+        driver.get("https://midway-auth.amazon.com/login");
+        driver.findElement(By.id("user_name")).sendKeys("raghnit");
+        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(30));
+    }*/
+
+    public static void main(String[] args) throws InterruptedException {
+        EODReport Obj1 = new EODReport();
+         Obj1.launchAndLogin();
+        //Obj1.mailBody();
+        sendMail();
+       // Obj1.accessSIMFolder();
+
+    }
+
+    public void launchAndLogin() throws InterruptedException {
+
+        //EODReport.midwayHandler();
+        driver = new ChromeDriver();
+        driver.manage().window().maximize();
+        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(30));
+        driver.get("https://amzlqa-testrail.last-mile.amazon.dev/index.php?/runs/view/153941&group_by=cases:section_id&group_order=asc&group_id=3561999");
+        driver.findElement(By.className("single-sign-on")).click();
+        driver.findElement(By.id("user_name")).sendKeys("raghnit");
+        Thread.sleep(5000);
+        driver.findElement(By.id("verify_btn")).click();
+        Thread.sleep(5000);
+        driver.get("https://amzlqa-testrail.last-mile.amazon.dev/index.php?/runs/view/153941&group_by=cases:section_id&group_order=asc&group_id=3561999");
+        Thread.sleep(5000);
+        driver.findElement(By.xpath("//div[@id='statusChart']/following::span[1]")).getText();
+        driver.findElement(By.xpath("//div[@id='statusChart']/following::span[3]")).getText();
+        driver.findElement(By.xpath("//div[@id='statusChart']/following::span[5]")).getText();
+        driver.findElement(By.xpath("//div[@id='statusChart']/following::span[7]")).getText();
+        driver.findElement(By.xpath("//div[@id='statusChart']/following::span[17]")).getText();
+    }
+}
